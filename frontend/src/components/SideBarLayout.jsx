@@ -9,13 +9,10 @@ const SidebarLayout = ({ children }) => {
   const location = useLocation();
   const sidebarRef = useRef(null);
 
-  // Get user data from localStorage
   const user = JSON.parse(localStorage.getItem("user"));
   const username = user?.username || "User";
-
   const heading = location.pathname === "/dashboard" ? `Welcome ${username}!` : "Tests For You!";
 
-  // Close sidebar if clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (mobileOpen && sidebarRef.current && !sidebarRef.current.contains(event.target)) {
@@ -28,48 +25,35 @@ const SidebarLayout = ({ children }) => {
   }, [mobileOpen]);
 
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row bg-gradient-to-r from-[#e6e3f6] via-[#e8f0f9] to-[#f5eaf7] font-sans relative">
+    <div className="min-h-screen h-screen flex flex-col lg:flex-row bg-gradient-to-r from-[#e6e3f6] via-[#e8f0f9] to-[#f5eaf7] font-sans relative overflow-hidden">
 
-      {/* Sidebar: Mobile (Drawer) & Desktop (Static) */}
+      {/* Sidebar */}
       <div
         ref={sidebarRef}
-        className={`fixed lg:static z-50 lg:z-auto top-0 left-0 w-64 bg-gradient-to-r from-[#e6e3f6] via-[#e8f0f9] to-[#f5eaf7] h-full shadow-lg transform transition-transform duration-300 ease-in-out 
+        className={`fixed lg:static z-50 top-0 left-0 w-64 bg-gradient-to-r from-[#e6e3f6] via-[#e8f0f9] to-[#f5eaf7] h-full shadow-lg transform transition-transform duration-300 ease-in-out 
         ${mobileOpen ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0`}
       >
         <Sidebar />
       </div>
 
-      {/* Overlay on mobile */}
-      {mobileOpen && (
-        <div className="fixed inset-0 z-40 lg:hidden"></div>
-      )}
+      {mobileOpen && <div className="fixed inset-0 z-40 lg:hidden" onClick={() => setMobileOpen(false)} />}
 
       {/* Main Content */}
-      <main className="flex-1 p-4 md:p-6 lg:p-10">
-        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-6 lg:mb-10 gap-4">
-
-          {/* Top Row: Hamburger and Learn Code (mobile only) */}
+      <main className="flex-1 flex flex-col overflow-auto p-4 md:p-6 lg:p-10">
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-6 gap-4">
+          {/* Mobile Top Bar */}
           <div className="flex justify-between items-center w-full lg:hidden">
-            <button
-              className="text-3xl text-gray-700"
-              onClick={() => setMobileOpen(!mobileOpen)}
-            >
+            <button className="text-3xl text-gray-700" onClick={() => setMobileOpen(!mobileOpen)}>
               <HiMenu />
             </button>
             <span className="text-2xl font-semibold text-gray-800">Learn Code</span>
           </div>
 
-          {/* Desktop Heading */}
-          <h2 className="hidden lg:block text-3xl font-semibold text-gray-800">
-            {`Welcome ${username}`}
-          </h2>
+          {/* Headings */}
+          <h2 className="hidden lg:block text-3xl font-semibold text-gray-800">{`Welcome ${username}`}</h2>
+          <h2 className="mt-4 mx-auto text-2xl lg:text-3xl font-semibold text-gray-800 lg:hidden">{heading}</h2>
 
-          {/* Welcome Message (mobile only) */}
-          <h2 className="mt-4 mx-auto text-2xl lg:text-3xl font-semibold text-gray-800 lg:hidden">
-            {heading}
-          </h2>
-
-          {/* Top Right: Search + Avatar */}
+          {/* Search and Avatar */}
           <div className="flex items-center gap-4 w-96 md:w-full ml-14 lg:w-auto">
             <div className="relative w-full sm:w-40 md:w-64">
               <input
@@ -85,8 +69,8 @@ const SidebarLayout = ({ children }) => {
           </div>
         </div>
 
-        {/* Children */}
-        {children}
+        {/* Children Content */}
+        <div className="flex-grow md:mt-6">{children}</div>
       </main>
     </div>
   );
