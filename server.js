@@ -13,7 +13,7 @@ const app = express();
 
 
 app.use(cors({
-  origin: ["http://localhost:5173", "https://lumiprep.vercel.app"],
+  origin: ["http://localhost:5173", "https://lumiprep.vercel.app", "https://lumiprep-vert.vercel.app"],
   credentials: true,
 }));
 
