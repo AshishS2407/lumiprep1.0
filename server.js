@@ -31,7 +31,7 @@ app.use('/auth', authRoutes);
 app.use('/tests', testRoutes);
 
 app.get('/', (req, res) => {
-  res.send('LumiPrep API is running');
+  res.send('Phone Friendly');
 });
 
 const PORT = process.env.PORT || 3000;
