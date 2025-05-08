@@ -11,10 +11,13 @@ connectDB();
 const app = express();
 
 // ✅ Enable CORS for frontend
+const cors = require("cors");
+
 app.use(cors({
-  origin: process.env.CLIENT_ORIGIN, // Frontend origin
-  credentials: true
+  origin: ["http://localhost:5173", "https://lumiprep.vercel.app"],
+  credentials: true,
 }));
+
 
 app.use(express.json());
 
