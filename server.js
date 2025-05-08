@@ -11,6 +11,7 @@ connectDB();
 const app = express();
 
 
+app.options('*', cors());
 
 app.use(cors({
   origin: ["http://localhost:5173", "https://lumiprep.vercel.app", "https://lumiprep-vert.vercel.app"],
