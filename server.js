@@ -18,6 +18,7 @@ app.use(cors({
     "https://lumiprep.vercel.app",        
     "https://lumiprep-vert.vercel.app"    
   ],
+  methods: ["GET", "POST", "PUT", "DELETE"],
   credentials: true,
 }));
 
