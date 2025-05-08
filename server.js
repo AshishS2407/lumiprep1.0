@@ -24,6 +24,10 @@ app.use(express.json());
 app.use('/auth', authRoutes);
 app.use('/tests', testRoutes);
 
+app.get('/', (req, res) => {
+  res.send('LumiPrep API is running');
+});
+
 const PORT = process.env.PORT
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
