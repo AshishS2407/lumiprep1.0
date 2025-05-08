@@ -25,7 +25,7 @@ const LoginPage = () => {
       localStorage.setItem("user", JSON.stringify(user));
 
       if (user.role === "admin") {
-        navigate("/admin");
+        navigate("/admin-dashboard");
       } else if (user.role === "user") {
         navigate("/dashboard");
       } else {
@@ -56,13 +56,13 @@ const LoginPage = () => {
           <a href="#" className="hover:text-purple-600">Explore</a>
           <a href="#" className="text-purple-500">Login</a>
           <button
-  className="block w-full text-white px-4 py-2 rounded-full transition-all duration-300 ease-in-out"
-  style={{
-    background: 'linear-gradient(to right, #B23DEB, #DE8FFF)',
-  }}
->
-  Sign Up
-</button>
+            className="block w-full text-white px-4 py-2 rounded-full transition-all duration-300 ease-in-out"
+            style={{
+              background: 'linear-gradient(to right, #B23DEB, #DE8FFF)',
+            }}
+          >
+            Sign Up
+          </button>
 
         </div>
       </nav>
@@ -70,39 +70,39 @@ const LoginPage = () => {
       {/* Mobile Menu */}
       {menuOpen && (
         <div className="md:hidden px-6 py-2 space-y-2 text-gray-700 ">
-          <a href="#" className="block hover:text-purple-600">Practice</a>
-          <a href="#" className="block hover:text-purple-600">Explore</a>
+          <a href="#" className="block hover:text-purple-500">Practice</a>
+          <a href="#" className="block hover:text-purple-500">Explore</a>
           <a href="#" className="block text-purple-500">Login</a>
           <button
-  className="block text-white px-4 py-2 rounded-full transition-all duration-300 ease-in-out"
-  style={{
-    background: 'linear-gradient(to right, #B23DEB, #DE8FFF)',
-  }}
->
-  Sign Up
-</button>
+            className="block text-white px-4 py-2 rounded-full transition-all duration-300 ease-in-out"
+            style={{
+              background: 'linear-gradient(to right, #B23DEB, #DE8FFF)',
+            }}
+          >
+            Sign Up
+          </button>
 
         </div>
       )}
 
-      <div className="flex flex-col md:flex-row h-[1000px] md:h-[500px] mt-40 md:mt-24">
+      <div className="flex flex-col md:flex-row h-[1000px] md:h-[600px] mt-40 md:mt-24">
         {/* Login Card */}
         <div className="order-1 md:order-2 bg-white/90 mx-auto w-[400px] md:w-[450px] min-h-[300px] rounded-3xl shadow-lg p-4 mt-2 md:mt-6 z-20 flex flex-col justify-start">
-        <div>
-        <div className="mb-4 text-center mt-4 md:mt-8">
-        <h1 className="text-2xl md:text-3xl font-bold text-purple-600">
+          <div>
+            <div className="mb-4 text-center mt-4 md:mt-8">
+              <h1 className="text-2xl md:text-3xl font-bold text-purple-600">
                 <span className="text-purple-600">Learn</span>{" "}
                 <span className="text-gray-700">Code</span>
               </h1>
             </div>
-            <form onSubmit={handleLogin} className="space-y-3 mt-4">
-            {error && <p className="text-red-500 text-sm text-center">{error}</p>}
+            <form onSubmit={handleLogin} className="space-y-3 mt-4 md:mt-8">
+              {error && <p className="text-red-500 text-sm text-center">{error}</p>}
               <input
                 type="email"
                 placeholder="Mail id"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-3 border rounded-md focus:outline-none focus:ring-2 focus:ring-purple-400 text-sm"
+                className="w-full px-4 py-3 border rounded-md focus:outline-none placeholder:text-gray-400 focus:ring-2 focus:ring-2 border-gray-300 focus:ring-purple-400 text-sm md:mt-6"
                 required
               />
               <input
@@ -110,21 +110,21 @@ const LoginPage = () => {
                 placeholder="Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3 border rounded-md focus:outline-none focus:ring-2 focus:ring-purple-400 text-sm"
+                className="w-full px-4 py-3 border rounded-md focus:outline-none focus:ring-2 placeholder:text-gray-400 focus:ring-2 border-gray-300 focus:ring-purple-400 text-sm"
                 required
               />
-          <button
-  type="submit"
-  className="w-full text-white font-semibold py-3 rounded-full hover:opacity-90 transition-all duration-300 ease-in-out"
-  style={{
-    background: 'linear-gradient(to right, #B23DEB, #DE8FFF)',
-  }}
->
-  Log In
-</button>
+              <button
+                type="submit"
+                className="w-full text-white font-semibold py-3 rounded-full hover:opacity-90 transition-all duration-300 ease-in-out md:mt-8"
+                style={{
+                  background: 'linear-gradient(to right, #B23DEB, #DE8FFF)',
+                }}
+              >
+                Log In
+              </button>
 
 
-              <div className="flex justify-between text-xs mt-2">
+              <div className="flex justify-between text-xs mt-2 md:mt-6">
                 <a href="#" className="text-gray-500 hover:text-purple-600">
                   Forget Password?
                 </a>
@@ -133,18 +133,18 @@ const LoginPage = () => {
                 </a>
               </div>
             </form>
-            <div className="mt-6 text-center text-sm text-gray-500">
+            <div className="mt-6 text-center text-sm text-gray-500 md:mt-8">
               Or you can Signup with
             </div>
-            <div className="flex justify-center mt-3 space-x-4 text-xl">
+            <div className="flex justify-center mt-3 space-x-4 text-xl md:mt-6">
               <FaGoogle className="text-gray-600 hover:text-red-500 cursor-pointer" />
               <FaGithub className="text-gray-600 hover:text-black cursor-pointer" />
               <FaFacebook className="text-gray-600 hover:text-blue-600 cursor-pointer" />
             </div>
           </div>
 
-          <p className="mt-4 text-xs text-gray-400 text-center">
-          This site is protected by reCAPTCHA and the Google{" "}
+          <p className="mt-4 text-xs text-gray-400 text-center md:mt-10">
+            This site is protected by reCAPTCHA and the Google{" "}
             <a href="#" className="underline">Privacy Policy</a> and{" "}
             <a href="#" className="underline">Terms of Service</a> apply.
           </p>

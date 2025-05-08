@@ -14,6 +14,7 @@ const {
   getRecentSubmittedTests,
   getFilteredExplanations,
   updateTest,
+  getUserTestStats,
 } = require('./controllers/testContoller');
 
 const authMiddleware = require('../middleware/auth');
@@ -22,7 +23,9 @@ const isAdmin = require('../middleware/isAdmin');
 // Admin: Create a new test
 router.post('/', authMiddleware, isAdmin, createTest);
 
-router.put('/update/:testId', isAdmin,updateTest);
+router.get('/user-stats', authMiddleware, getUserTestStats);
+
+router.put('/update/:testId', authMiddleware,isAdmin,updateTest);
 
 // Admin: Add question to a test
 router.post('/:testId/questions', authMiddleware, isAdmin, addQuestion);
@@ -50,6 +53,7 @@ router.put('/:testId/questions/:questionId/explanation', authMiddleware, isAdmin
 router.get('/:testId/explanations', authMiddleware, getExplanations);
 
 router.get('/:testId/explanations/filter', authMiddleware, getFilteredExplanations);
+
 
 
 

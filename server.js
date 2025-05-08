@@ -12,7 +12,7 @@ const app = express();
 
 // ✅ Enable CORS for frontend
 app.use(cors({
-  origin: 'http://localhost:5173', // Frontend origin
+  origin: process.env.CLIENT_ORIGIN, // Frontend origin
   credentials: true
 }));
 
@@ -22,7 +22,7 @@ app.use(express.json());
 app.use('/auth', authRoutes);
 app.use('/tests', testRoutes);
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });

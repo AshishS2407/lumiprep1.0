@@ -40,7 +40,7 @@ const RecentTests = () => {
   return (
     <div className="w-96 mx-w-96 md:w-full mx-auto">
       <h3 className="text-xl font-semibold mb-4 text-gray-800">Recent Tests</h3>
-      <div className="flex gap-4 overflow-x-auto">
+      <div className="flex gap-4 overflow-x-auto md:mt-10">
         {loading ? (
           <p className="text-gray-500">Loading...</p>
         ) : error ? (
@@ -54,11 +54,11 @@ const RecentTests = () => {
                 className="w-48 h-64 rounded-xl overflow-hidden shadow-md relative cursor-pointer"
                 onClick={() => handleTestClick(test._id)} // Add the click handler
               >
-                <img
+                {/* <img
                   src={`https://via.placeholder.com/150/${index % 2 === 0 ? "0000FF" : "008080"}/FFFFFF?text=${encodeURIComponent(testTitle)}`}
                   alt={testTitle}
                   className="w-full h-full object-cover"
-                />
+                /> */}
                 <div className="absolute bottom-0 left-0 w-full p-2 bg-black bg-opacity-60 text-white text-sm">
                   {testTitle}
                 </div>

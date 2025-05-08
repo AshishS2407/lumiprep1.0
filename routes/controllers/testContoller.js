@@ -297,3 +297,47 @@ exports.updateTest = async (req, res) => {
 };
 
 
+// User: Get Test Stats
+exports.getUserTestStats = async (req, res) => {
+  const userId = req.user.id;
+
+  try {
+    const submissions = await UserAnswer.find({ userId });
+    let passed = 0;
+    let totalScore = 0;
+
+    for (const submission of submissions) {
+      const questions = await Question.find({ testId: submission.testId });
+      const totalQuestions = questions.length;
+
+      let correctAnswers = 0;
+      for (const question of questions) {
+        const correctIndex = question.options.findIndex((opt) => opt.isCorrect);
+        const userAnswer = submission.answers.find(
+          (ans) => ans.questionId.toString() === question._id.toString()
+        );
+        if (userAnswer?.selectedOptionIndex === correctIndex) {
+          correctAnswers++;
+        }
+      }
+
+      const percentage = (correctAnswers / totalQuestions) * 100;
+      totalScore += percentage;
+      if (percentage >= 50) passed++;
+    }
+
+    const totalTests = submissions.length;
+    const failed = totalTests - passed;
+    const avgScore = totalTests ? Math.round(totalScore / totalTests) : 0;
+
+    res.json({
+      totalTests,
+      passed,
+      failed,
+      average: avgScore,
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Failed to get stats", error: error.message });
+  }
+};
+
