@@ -32,7 +32,7 @@ app.use('/auth', authRoutes);
 app.use('/tests', testRoutes);
 
 app.get('/', (req, res) => {
-  res.send('Phone Friendly');
+  res.send('Admin Done');
 });
 
 const PORT = process.env.PORT || 3000;
