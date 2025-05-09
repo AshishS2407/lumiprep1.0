@@ -15,8 +15,8 @@ const app = express();
 app.use(cors({
   origin: [
     "http://localhost:5173",
-    "https://adminlumiprep.vercel.app/",
-    "https://lumiprep-user.vercel.app/"  ],
+    "https://adminlumiprep.vercel.app",
+    "https://lumiprep-user.vercel.app"  ],
 
   methods: ["GET", "POST", "PUT", "DELETE"],
   credentials: true,
@@ -31,7 +31,7 @@ app.use('/auth', authRoutes);
 app.use('/tests', testRoutes);
 
 app.get('/', (req, res) => {
-  res.send('Updated Vercel');
+  res.send('Updated Vercel New');
 });
 
 const PORT = process.env.PORT || 3000;
