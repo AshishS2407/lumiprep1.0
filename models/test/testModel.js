@@ -1,17 +1,15 @@
+// models/test/testModel.js
+
 const mongoose = require('mongoose');
 
 const testSchema = new mongoose.Schema({
-  companyName: { type: String, required: true },
-  testTitle: { type: String, required: true },
+  companyName: String,
+  testTitle: String,
   description: String,
-  validTill: { type: Date }, // optional: to mark expiry
-  createdAt: { type: Date, default: Date.now },
-  duration: { type: Number, required: true }, // <-- duration in minutes
+  validTill: Date,
+  duration: Number,
+  parentTestIds: [{ type: mongoose.Schema.Types.ObjectId, ref: "Test" }]
+
 });
 
 module.exports = mongoose.model('Test', testSchema);
-
-
-
-
-

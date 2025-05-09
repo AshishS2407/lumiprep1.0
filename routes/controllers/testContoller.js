@@ -20,7 +20,7 @@ exports.createTest = async (req, res) => {
 };
 
 
-// Admin: Add Question to Test
+// Admin: Add Question to Test`
 exports.addQuestion = async (req, res) => {
   try {
     const testId = req.params.testId; // 🔹 Get from URL
@@ -341,3 +341,223 @@ exports.getUserTestStats = async (req, res) => {
   }
 };
 
+
+// Create Main Test
+exports.createMainTest = async (req, res) => {
+  try {
+    const { testTitle, description } = req.body;
+
+    const newTest = await Test.create({
+      testTitle,
+      description,
+      parentTestId: null,
+    });
+
+    res.status(201).json({ message: 'Main test created', test: newTest });
+  } catch (error) {
+    res.status(500).json({ message: 'Error creating main test', error: error.message });
+  }
+};
+
+
+exports.assignSubTest = async (req, res) => {
+  const { subTestId, mainTestId } = req.body;
+
+  try {
+    const updatedSubTest = await Test.findByIdAndUpdate(
+      subTestId,
+      { $addToSet: { parentTestIds: mainTestId } }, // prevents duplicates
+      { new: true }
+    );
+
+    if (!updatedSubTest) {
+      return res.status(404).json({ message: 'Sub test not found' });
+    }
+
+    res.status(200).json({ message: 'Sub test assigned', test: updatedSubTest });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to assign sub test', error: error.message });
+  }
+};
+
+
+
+
+// Get All Main Tests with their Sub Tests
+exports.getMainTestsWithSubTests = async (req, res) => {
+  try {
+    const mainTests = await Test.find({ parentTestId: null });
+
+    const result = await Promise.all(
+      mainTests.map(async (mainTest) => {
+        const subTests = await Test.find({ parentTestId: mainTest._id });
+        return {
+          ...mainTest.toObject(),
+          subTests,
+        };
+      })
+    );
+
+    res.status(200).json(result);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching main tests', error: error.message });
+  }
+};
+
+exports.getSubTestsByMainId = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const mainTestId = req.params.mainTestId;
+
+    // Find subtests where mainTestId is in the parentTestIds array
+    const subTests = await Test.find({ parentTestIds: mainTestId });
+
+    // Fetch user-specific statuses
+    const statuses = await UserTestStatus.find({ userId });
+
+    // Create a map of testId to status
+    const statusMap = {};
+    statuses.forEach((s) => {
+      statusMap[s.testId.toString()] = s.status;
+    });
+
+    // Attach status to each subtest
+    const subTestsWithStatus = subTests.map((test) => ({
+      ...test.toObject(),
+      status: statusMap[test._id.toString()] || "Upcoming",
+    }));
+
+    res.status(200).json(subTestsWithStatus);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Failed to fetch subtests" });
+  }
+};
+
+
+
+exports.getMainTests = async (req, res) => {
+  try {
+    const userId = req.user.id; // assuming JWT middleware sets req.user
+
+    // Get only main tests
+    const mainTests = await Test.find({ parentTestId: null });
+
+    // Fetch user-specific statuses
+    const statuses = await UserTestStatus.find({ userId });
+
+    // Create a map of testId to status
+    const statusMap = {};
+    statuses.forEach((s) => {
+      statusMap[s.testId.toString()] = s.status;
+    });
+
+    // Attach status to each main test
+    const mainTestsWithStatus = mainTests.map((test) => {
+      return {
+        ...test.toObject(),
+        status: statusMap[test._id.toString()] || "Upcoming",
+      };
+    });
+
+    res.status(200).json(mainTestsWithStatus);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Failed to fetch main tests', error: error.message });
+  }
+};
+
+
+
+exports.getSubTests = async (req, res) => {
+  try {
+    const userId = req.user.id; // assuming JWT middleware sets req.user
+
+    // Get only subtests
+    const subTests = await Test.find({ parentTestId: { $ne: null } });
+
+    // Fetch user-specific statuses
+    const statuses = await UserTestStatus.find({ userId });
+
+    // Create a map of testId to status
+    const statusMap = {};
+    statuses.forEach((s) => {
+      statusMap[s.testId.toString()] = s.status;
+    });
+
+    // Attach status to each subtest
+    const subTestsWithStatus = subTests.map((test) => {
+      return {
+        ...test.toObject(),
+        status: statusMap[test._id.toString()] || "Upcoming",
+      };
+    });
+
+    res.status(200).json(subTestsWithStatus);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Failed to fetch subtests" });
+  }
+};
+
+// Add to your test controllers
+exports.getUserTestResults = async (req, res) => {
+  try {
+    const userId = req.params.userId;
+    
+    // Get all test submissions with test details
+    const submissions = await UserAnswer.find({ userId })
+      .populate('testId', 'testTitle description duration')
+      .sort({ submittedAt: -1 });
+
+    const results = await Promise.all(
+      submissions.map(async (submission) => {
+        const questions = await Question.find({ testId: submission.testId });
+        
+        let correctCount = 0;
+        const details = [];
+        
+        questions.forEach((question) => {
+          const submittedAnswer = submission.answers.find(
+            ans => ans.questionId.toString() === question._id.toString()
+          );
+          const correctIndex = question.options.findIndex(opt => opt.isCorrect);
+          const isCorrect = submittedAnswer?.selectedOptionIndex === correctIndex;
+          
+          if (isCorrect) correctCount++;
+          
+          details.push({
+            questionId: question._id,
+            questionText: question.questionText,
+            selectedOptionIndex: submittedAnswer?.selectedOptionIndex ?? null,
+            correctOptionIndex: correctIndex,
+            isCorrect,
+            explanation: question.explanation
+          });
+        });
+        
+        return {
+          _id: submission._id,
+          testId: submission.testId._id,
+          testTitle: submission.testId.testTitle,
+          testDescription: submission.testId.description,
+          duration: submission.testId.duration,
+          submittedAt: submission.submittedAt,
+          totalQuestions: questions.length,
+          correctAnswers: correctCount,
+          scorePercentage: questions.length > 0 
+            ? Math.round((correctCount / questions.length) * 100) 
+            : 0,
+          details
+        };
+      })
+    );
+
+    res.status(200).json(results);
+  } catch (error) {
+    res.status(500).json({ 
+      message: 'Failed to get user results', 
+      error: error.message 
+    });
+  }
+};

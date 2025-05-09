@@ -31,7 +31,7 @@ app.use('/auth', authRoutes);
 app.use('/tests', testRoutes);
 
 app.get('/', (req, res) => {
-  res.send('Updated Vercel New');
+  res.send('New Version');
 });
 
 const PORT = process.env.PORT || 3000;
