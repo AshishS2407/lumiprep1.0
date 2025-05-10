@@ -3,21 +3,260 @@ const UserTestStatus = require('../../models/test/userTestStatusModel');
 const Question = require('../../models/test/questionModel');
 const UserAnswer = require('../../models/test/answerModel');
 
-// Admin: Create Test
-exports.createTest = async (req, res) => {
+
+
+//1 Create Main Test
+exports.createMainTest = async (req, res) => {
   try {
-    const { companyName, testTitle, description, validTill, duration } = req.body;
+    const { testTitle, description } = req.body;
+
+    const newTest = await Test.create({ 
+      testTitle, 
+      description,
+      testType: 'main',
+      parentTestIds: []
+    });
+
+    res.status(201).json(newTest);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Error creating main test' });
+  }
+};
+
+
+
+
+//2 Admin: Create Sub Test
+exports.createSubTest = async (req, res) => {
+  try {
+    const { companyName, testTitle, description, validTill, duration, parentTestIds } = req.body;
 
     if (!duration) {
       return res.status(400).json({ message: 'Duration is required' });
     }
 
-    const newTest = await Test.create({ companyName, testTitle, description, validTill, duration });
-    res.status(201).json({ message: 'Test created', test: newTest });
+    if (!parentTestIds || parentTestIds.length === 0) {
+      return res.status(400).json({ message: 'At least one parentTestId is required for sub tests' });
+    }
+
+    // Verify parent tests exist and are main tests
+    const parentTests = await Test.find({ _id: { $in: parentTestIds }, testType: 'main' });
+    if (parentTests.length !== parentTestIds.length) {
+      return res.status(400).json({ message: 'One or more parent tests not found or not main tests' });
+    }
+
+    const newTest = await Test.create({ 
+      companyName, 
+      testTitle, 
+      description, 
+      validTill, 
+      duration,
+      testType: 'sub',
+      parentTestIds
+    });
+
+    res.status(201).json(newTest);
   } catch (error) {
-    res.status(500).json({ message: 'Error creating test', error: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Error creating sub test' });
   }
 };
+
+
+
+//3 Get All Main Tests with their Sub Tests
+exports.getMainTestsWithSubTests = async (req, res) => {
+  try {
+    const mainTests = await Test.find({ testType: 'main' });
+    const result = await Promise.all(
+      mainTests.map(async (mainTest) => {
+        const subTests = await Test.find({ 
+          parentTestIds: mainTest._id,  // Now checking if _id exists in the array
+          testType: 'sub'               // Explicitly checking testType for safety
+        });                return {
+          ...mainTest.toObject(),
+          subTests,
+        };
+      })
+    );
+
+    res.status(200).json(result);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching main tests', error: error.message });
+  }
+};
+
+
+//4 Get Subtest by Main Id 
+
+exports.getSubTestsByMainId = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const mainTestId = req.params.mainTestId;
+
+    // Find subtests where mainTestId is in the parentTestIds array
+    const subTests = await Test.find({ parentTestIds: mainTestId, testType: 'sub' });
+
+    // Fetch user-specific statuses
+    const statuses = await UserTestStatus.find({ userId });
+
+    // Create a map of testId to status
+    const statusMap = {};
+    statuses.forEach((s) => {
+      statusMap[s.testId.toString()] = s.status;
+    });
+
+    // Attach status to each subtest
+    const subTestsWithStatus = subTests.map((test) => ({
+      ...test.toObject(),
+      status: statusMap[test._id.toString()] || "Upcoming",
+    }));
+
+    res.status(200).json(subTestsWithStatus);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Failed to fetch subtests" });
+  }
+};
+
+//5 Get Main Test
+
+
+exports.getMainTests = async (req, res) => {
+  try {
+    const userId = req.user.id; // assuming JWT middleware sets req.user
+
+    // Get only main tests
+    const mainTests = await Test.find({ testType: 'main' });
+
+    // Fetch user-specific statuses
+    const statuses = await UserTestStatus.find({ userId });
+
+    // Create a map of testId to status
+    const statusMap = {};
+    statuses.forEach((s) => {
+      statusMap[s.testId.toString()] = s.status;
+    });
+
+    // Attach status to each main test
+    const mainTestsWithStatus = mainTests.map((test) => {
+      return {
+        ...test.toObject(),
+        status: statusMap[test._id.toString()] || "Upcoming",
+      };
+    });
+
+    res.status(200).json(mainTestsWithStatus);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Failed to fetch main tests', error: error.message });
+  }
+};
+
+
+//6 Get Sub Test 
+
+exports.getSubTests = async (req, res) => {
+  try {
+    const userId = req.user.id; // assuming JWT middleware sets req.user
+
+    // Get only subtests
+    const subTests = await Test.find({ testType: 'sub' });
+    // Fetch user-specific statuses
+    const statuses = await UserTestStatus.find({ userId });
+
+    // Create a map of testId to status
+    const statusMap = {};
+    statuses.forEach((s) => {
+      statusMap[s.testId.toString()] = s.status;
+    });
+
+    // Attach status to each subtest
+    const subTestsWithStatus = subTests.map((test) => {
+      return {
+        ...test.toObject(),
+        status: statusMap[test._id.toString()] || "Upcoming",
+      };
+    });
+
+    res.status(200).json(subTestsWithStatus);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Failed to fetch subtests" });
+  }
+};
+
+
+//7 Admin: Update Test
+exports.updateTest = async (req, res) => {
+  try {
+    const { testId } = req.params;
+    const updateData = req.body;
+
+    // Validation before updating
+    if (updateData.testType === 'sub' && (!updateData.parentTestIds || updateData.parentTestIds.length === 0)) {
+      return res.status(400).json({ message: 'Sub tests must have parentTestIds' });
+    }
+
+    if (updateData.testType === 'main' && updateData.parentTestIds?.length > 0) {
+      return res.status(400).json({ message: 'Main tests cannot have parentTestIds' });
+    }
+
+    const updatedTest = await Test.findByIdAndUpdate(
+      testId,
+      updateData,
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedTest) {
+      return res.status(404).json({ message: 'Test not found' });
+    }
+
+    res.json(updatedTest);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Error updating test' });
+  }
+};
+
+
+
+//8 get UserTests 
+
+exports.getUserTests = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    // Fetch all tests
+    const tests = await Test.find();
+
+    // Fetch the user's test statuses
+    const statuses = await UserTestStatus.find({ userId });
+
+    // Create a map from testId to status
+    const statusMap = {};
+    statuses.forEach((s) => {
+      statusMap[s.testId.toString()] = s.status;
+    });
+
+    // Attach status to each test object
+    const testsWithStatus = tests.map((test) => {
+      return {
+        ...test.toObject(),
+        status: statusMap[test._id.toString()] || "Upcoming",
+      };
+    });
+
+    // Send a flat array response
+    res.json(testsWithStatus);
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Error fetching tests" });
+  }
+};
+
 
 
 // Admin: Add Question to Test`
@@ -35,38 +274,6 @@ exports.addQuestion = async (req, res) => {
     res.status(500).json({ message: 'Failed to add question', error: error.message });
   }
 };
-
-
-exports.getUserTests = async (req, res) => {
-  try {
-    const userId = req.user.id; // assuming JWT middleware sets req.user
-
-    const tests = await Test.find();
-
-    // Fetch user-specific statuses
-    const statuses = await UserTestStatus.find({ userId });
-
-    // Create a map of testId to status
-    const statusMap = {};
-    statuses.forEach((s) => {
-      statusMap[s.testId.toString()] = s.status;
-    });
-
-    // Attach status to each test
-    const testsWithStatus = tests.map((test) => {
-      return {
-        ...test.toObject(),
-        status: statusMap[test._id.toString()] || "Upcoming", // fallback
-      };
-    });
-
-    res.json(testsWithStatus);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Error fetching tests" });
-  }
-};
-
 
 // User: Get Questions for a Test
 exports.getTestQuestions = async (req, res) => {
@@ -275,26 +482,7 @@ exports.getFilteredExplanations = async (req, res) => {
 };
 
 
-// Admin: Update Test
-exports.updateTest = async (req, res) => {
-  try {
-    const { testId } = req.params;
-    const updateData = req.body;
 
-    const updatedTest = await Test.findByIdAndUpdate(testId, updateData, {
-      new: true,
-      runValidators: true,
-    });
-
-    if (!updatedTest) {
-      return res.status(404).json({ message: "Test not found" });
-    }
-
-    res.json({ message: "Test updated", test: updatedTest });
-  } catch (error) {
-    res.status(500).json({ message: "Error updating test", error: error.message });
-  }
-};
 
 
 // User: Get Test Stats
@@ -342,163 +530,13 @@ exports.getUserTestStats = async (req, res) => {
 };
 
 
-// Create Main Test
-exports.createMainTest = async (req, res) => {
-  try {
-    const { testTitle, description } = req.body;
-
-    const newTest = await Test.create({
-      testTitle,
-      description,
-      parentTestId: null,
-    });
-
-    res.status(201).json({ message: 'Main test created', test: newTest });
-  } catch (error) {
-    res.status(500).json({ message: 'Error creating main test', error: error.message });
-  }
-};
-
-
-exports.assignSubTest = async (req, res) => {
-  const { subTestId, mainTestId } = req.body;
-
-  try {
-    const updatedSubTest = await Test.findByIdAndUpdate(
-      subTestId,
-      { $addToSet: { parentTestIds: mainTestId } }, // prevents duplicates
-      { new: true }
-    );
-
-    if (!updatedSubTest) {
-      return res.status(404).json({ message: 'Sub test not found' });
-    }
-
-    res.status(200).json({ message: 'Sub test assigned', test: updatedSubTest });
-  } catch (error) {
-    res.status(500).json({ message: 'Failed to assign sub test', error: error.message });
-  }
-};
 
 
 
 
-// Get All Main Tests with their Sub Tests
-exports.getMainTestsWithSubTests = async (req, res) => {
-  try {
-    const mainTests = await Test.find({ parentTestId: null });
-
-    const result = await Promise.all(
-      mainTests.map(async (mainTest) => {
-        const subTests = await Test.find({ parentTestId: mainTest._id });
-        return {
-          ...mainTest.toObject(),
-          subTests,
-        };
-      })
-    );
-
-    res.status(200).json(result);
-  } catch (error) {
-    res.status(500).json({ message: 'Error fetching main tests', error: error.message });
-  }
-};
-
-exports.getSubTestsByMainId = async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const mainTestId = req.params.mainTestId;
-
-    // Find subtests where mainTestId is in the parentTestIds array
-    const subTests = await Test.find({ parentTestIds: mainTestId });
-
-    // Fetch user-specific statuses
-    const statuses = await UserTestStatus.find({ userId });
-
-    // Create a map of testId to status
-    const statusMap = {};
-    statuses.forEach((s) => {
-      statusMap[s.testId.toString()] = s.status;
-    });
-
-    // Attach status to each subtest
-    const subTestsWithStatus = subTests.map((test) => ({
-      ...test.toObject(),
-      status: statusMap[test._id.toString()] || "Upcoming",
-    }));
-
-    res.status(200).json(subTestsWithStatus);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Failed to fetch subtests" });
-  }
-};
 
 
 
-exports.getMainTests = async (req, res) => {
-  try {
-    const userId = req.user.id; // assuming JWT middleware sets req.user
-
-    // Get only main tests
-    const mainTests = await Test.find({ parentTestId: null });
-
-    // Fetch user-specific statuses
-    const statuses = await UserTestStatus.find({ userId });
-
-    // Create a map of testId to status
-    const statusMap = {};
-    statuses.forEach((s) => {
-      statusMap[s.testId.toString()] = s.status;
-    });
-
-    // Attach status to each main test
-    const mainTestsWithStatus = mainTests.map((test) => {
-      return {
-        ...test.toObject(),
-        status: statusMap[test._id.toString()] || "Upcoming",
-      };
-    });
-
-    res.status(200).json(mainTestsWithStatus);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Failed to fetch main tests', error: error.message });
-  }
-};
-
-
-
-exports.getSubTests = async (req, res) => {
-  try {
-    const userId = req.user.id; // assuming JWT middleware sets req.user
-
-    // Get only subtests
-    const subTests = await Test.find({ parentTestId: { $ne: null } });
-
-    // Fetch user-specific statuses
-    const statuses = await UserTestStatus.find({ userId });
-
-    // Create a map of testId to status
-    const statusMap = {};
-    statuses.forEach((s) => {
-      statusMap[s.testId.toString()] = s.status;
-    });
-
-    // Attach status to each subtest
-    const subTestsWithStatus = subTests.map((test) => {
-      return {
-        ...test.toObject(),
-        status: statusMap[test._id.toString()] || "Upcoming",
-      };
-    });
-
-    res.status(200).json(subTestsWithStatus);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Failed to fetch subtests" });
-  }
-};
 
 // Add to your test controllers
 exports.getUserTestResults = async (req, res) => {

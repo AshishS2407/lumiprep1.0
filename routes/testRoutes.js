@@ -2,7 +2,6 @@ const express = require('express');
 const router = express.Router();
 
 const {
-  createTest,
   addQuestion,
   getTestQuestions,
   submitAnswers,
@@ -16,26 +15,25 @@ const {
   updateTest,
   getUserTestStats,
   createMainTest,
-  assignSubTest,
   getMainTestsWithSubTests,
   getMainTests,
   getSubTests,
   getSubTestsByMainId,
   getUserTestResults,
   getLeaderboard,
+  createSubTest,
 } = require('./controllers/testContoller');
 
 const authMiddleware = require('../middleware/auth');
 const isAdmin = require('../middleware/isAdmin');
 
 // Admin: Create a new test
-router.post('/', authMiddleware, isAdmin, createTest);
+router.post('/sub', authMiddleware, isAdmin, createSubTest);
 
 // Admin: Create a main test (e.g., English, Hindi)
 router.post('/main', authMiddleware, isAdmin, createMainTest);
 
 // Admin: Assign an existing sub test to a main test
-router.put('/assign-sub-test', authMiddleware, isAdmin, assignSubTest);
 
 router.get('/sub-tests', authMiddleware, getSubTests);
 
