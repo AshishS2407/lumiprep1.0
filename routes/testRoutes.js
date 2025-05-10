@@ -22,6 +22,7 @@ const {
   getSubTests,
   getSubTestsByMainId,
   getUserTestResults,
+  getLeaderboard,
 } = require('./controllers/testContoller');
 
 const authMiddleware = require('../middleware/auth');
@@ -41,6 +42,9 @@ router.get('/sub-tests', authMiddleware, getSubTests);
 router.get('/main-tests', authMiddleware, getMainTests);
 
 router.get('/user-stats', authMiddleware, getUserTestStats);
+
+router.get('/leaderboard', authMiddleware, getLeaderboard)
+
 
 router.get('/user/:userId/results', authMiddleware,isAdmin, getUserTestResults);
 
@@ -76,6 +80,7 @@ router.get('/:testId/explanations', authMiddleware, getExplanations);
 router.get('/:testId/explanations/filter', authMiddleware, getFilteredExplanations);
 
 router.get('/main/all', authMiddleware, getMainTestsWithSubTests);
+
 
 
 

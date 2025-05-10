@@ -561,3 +561,108 @@ exports.getUserTestResults = async (req, res) => {
     });
   }
 };
+
+
+exports.getLeaderboard = async (req, res) => {
+  try {
+    const leaderboard = await UserAnswer.aggregate([
+      {
+        $lookup: {
+          from: 'questions',
+          localField: 'answers.questionId',
+          foreignField: '_id',
+          as: 'questionDetails',
+        },
+      },
+      {
+        $addFields: {
+          totalCorrect: {
+            $size: {
+              $filter: {
+                input: '$answers',
+                as: 'ans',
+                cond: {
+                  $let: {
+                    vars: {
+                      matchedQuestion: {
+                        $first: {
+                          $filter: {
+                            input: '$questionDetails',
+                            as: 'q',
+                            cond: { $eq: ['$$q._id', '$$ans.questionId'] },
+                          },
+                        },
+                      },
+                    },
+                    in: {
+                      $eq: [
+                        {
+                          $arrayElemAt: [
+                            '$$matchedQuestion.options.isCorrect',
+                            '$$ans.selectedOptionIndex',
+                          ],
+                        },
+                        true,
+                      ],
+                    },
+                  },
+                },
+              },
+            },
+          },
+          totalQuestions: { $size: '$answers' },
+        },
+      },
+      {
+        $group: {
+          _id: '$userId',
+          totalCorrectAcrossTests: { $sum: '$totalCorrect' },
+          totalQuestionsAcrossTests: { $sum: '$totalQuestions' },
+        },
+      },
+      {
+        $addFields: {
+          accuracy: {
+            $cond: [
+              { $eq: ['$totalQuestionsAcrossTests', 0] },
+              0,
+              {
+                $multiply: [
+                  {
+                    $divide: ['$totalCorrectAcrossTests', '$totalQuestionsAcrossTests'],
+                  },
+                  100,
+                ],
+              },
+            ],
+          },
+        },
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: '_id',
+          foreignField: '_id',
+          as: 'user',
+        },
+      },
+      { $unwind: '$user' },
+      {
+        $project: {
+          _id: 0,
+          userId: '$user._id',
+          name: '$user.name',
+          lumiId: '$user.lumiId',
+          accuracy: { $round: ['$accuracy', 2] },
+        },
+      },
+      { $sort: { accuracy: -1 } },
+      { $limit: 10 },
+    ]);
+
+    res.status(200).json({ leaderboard });
+  } catch (error) {
+    console.error('Leaderboard Error:', error);
+    res.status(500).json({ message: 'Failed to generate leaderboard', error: error.message });
+  }
+};
