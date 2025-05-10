@@ -62,11 +62,11 @@ exports.login = async (req, res) => {
 
 exports.createUser = async (req, res) => {
   try {
-    const { name, password } = req.body;
+    const { name, password, lumiId } = req.body;
 
-    const year = new Date().getFullYear();
-    const random = Math.random().toString(36).substr(2, 4).toUpperCase();
-    const lumiId = `KN${year}${random}`;
+    if (!name || !password || !lumiId) {
+      return res.status(400).json({ message: 'Name, password, and lumiId are required' });
+    }
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -81,12 +81,13 @@ exports.createUser = async (req, res) => {
       message: 'User created',
       lumiId,
       name,
-      password // plain text sent back (only for display after creation)
+      password // plain text just for return (only for display if necessary)
     });
   } catch (error) {
     res.status(500).json({ message: 'Failed to create user', error: error.message });
   }
 };
+
 
 // Updated controller to include test scores
 exports.getAllUsers = async (req, res) => {
@@ -163,3 +164,53 @@ exports.userLogin = async (req, res) => {
     res.status(500).json({ message: 'Login failed', error: error.message });
   }
 };
+
+
+
+exports.createAdmin = async (req, res) => {
+  try {
+    const { email, password, role } = req.body;
+
+    // Get the user's role from the JWT token
+    const userRole = req.user.role;  // Assuming user info is stored in req.user after authentication
+
+    // Ensure the user is allowed to create an admin (only superadmins and admins are allowed)
+    if (userRole !== "superadmin" && userRole !== "admin") {
+      return res.status(403).json({ message: "You do not have permission to create new admins." });
+    }
+
+    // Validate required fields
+    if (!email || !password || !role)
+      return res.status(400).json({ message: 'Email, password, and role are required' });
+
+    // Ensure the role is one of the allowed roles
+    const allowedRoles = ['admin', 'superadmin', 'mentor'];
+    if (!allowedRoles.includes(role)) {
+      return res.status(400).json({ message: 'Invalid role specified' });
+    }
+
+    // Check if the email already exists
+    const existing = await User.findOne({ email });
+    if (existing) return res.status(400).json({ message: 'Email already exists' });
+
+    // Hash the password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Create the new user with the specified role
+    const newUser = await User.create({
+      name: email.split('@')[0], // Automatically generate the name from the email
+      email,
+      password: hashedPassword,
+      role, // Set the role dynamically
+    });
+
+    res.status(201).json({
+      message: `${role.charAt(0).toUpperCase() + role.slice(1)} created successfully`,
+      email: newUser.email,
+      role: newUser.role,
+    });
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to create user', error: err.message });
+  }
+};
+
