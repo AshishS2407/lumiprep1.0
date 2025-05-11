@@ -63,6 +63,40 @@ exports.createSubTest = async (req, res) => {
   }
 };
 
+//3 Assign existing sub test to a main test
+exports.assignSubTestToMain = async (req, res) => {
+  try {
+    const { subTestId, mainTestId } = req.body;
+
+    // Check if main test exists and is of type 'main'
+    const mainTest = await Test.findOne({ _id: mainTestId, testType: 'main' });
+    if (!mainTest) {
+      return res.status(400).json({ message: 'Main test not found or not a valid main test' });
+    }
+
+    // Check if sub test exists and is of type 'sub'
+    const subTest = await Test.findOne({ _id: subTestId, testType: 'sub' });
+    if (!subTest) {
+      return res.status(400).json({ message: 'Sub test not found or not a valid sub test' });
+    }
+
+    // Avoid duplicate assignment
+    if (subTest.parentTestIds.includes(mainTestId)) {
+      return res.status(400).json({ message: 'Sub test is already assigned to this main test' });
+    }
+
+    // Assign main test ID to sub test
+    subTest.parentTestIds.push(mainTestId);
+    await subTest.save();
+
+    res.status(200).json({ message: 'Sub test assigned to main test successfully', subTest });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Error assigning sub test to main test' });
+  }
+};
+
+
 
 
 //3 Get All Main Tests with their Sub Tests

@@ -22,6 +22,7 @@ const {
   getUserTestResults,
   getLeaderboard,
   createSubTest,
+  assignSubTestToMain,
 } = require('./controllers/testContoller');
 
 const authMiddleware = require('../middleware/auth');
@@ -34,6 +35,7 @@ router.post('/sub', authMiddleware, isAdmin, createSubTest);
 router.post('/main', authMiddleware, isAdmin, createMainTest);
 
 // Admin: Assign an existing sub test to a main test
+router.post('/assign-subtest', assignSubTestToMain);
 
 router.get('/sub-tests', authMiddleware, getSubTests);
 
