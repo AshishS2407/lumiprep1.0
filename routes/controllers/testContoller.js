@@ -748,7 +748,7 @@ exports.getUserTestStats = async (req, res) => {
 exports.getUserTestResults = async (req, res) => {
   try {
     const userId = req.params.userId;
-    
+
     // Get all test submissions with test details
     const submissions = await UserAnswer.find({ userId })
       .populate('testId', 'testTitle description duration')
@@ -756,20 +756,23 @@ exports.getUserTestResults = async (req, res) => {
 
     const results = await Promise.all(
       submissions.map(async (submission) => {
-        const questions = await Question.find({ testId: submission.testId });
-        
+        // If the test has been deleted or is not populated
+        if (!submission.testId) return null;
+
+        const questions = await Question.find({ testId: submission.testId._id });
+
         let correctCount = 0;
         const details = [];
-        
+
         questions.forEach((question) => {
           const submittedAnswer = submission.answers.find(
             ans => ans.questionId.toString() === question._id.toString()
           );
           const correctIndex = question.options.findIndex(opt => opt.isCorrect);
           const isCorrect = submittedAnswer?.selectedOptionIndex === correctIndex;
-          
+
           if (isCorrect) correctCount++;
-          
+
           details.push({
             questionId: question._id,
             questionText: question.questionText,
@@ -779,7 +782,7 @@ exports.getUserTestResults = async (req, res) => {
             explanation: question.explanation
           });
         });
-        
+
         return {
           _id: submission._id,
           testId: submission.testId._id,
@@ -789,22 +792,25 @@ exports.getUserTestResults = async (req, res) => {
           submittedAt: submission.submittedAt,
           totalQuestions: questions.length,
           correctAnswers: correctCount,
-          scorePercentage: questions.length > 0 
-            ? Math.round((correctCount / questions.length) * 100) 
+          scorePercentage: questions.length > 0
+            ? Math.round((correctCount / questions.length) * 100)
             : 0,
           details
         };
       })
     );
 
-    res.status(200).json(results);
+    const filteredResults = results.filter(r => r !== null);
+    res.status(200).json(filteredResults);
   } catch (error) {
-    res.status(500).json({ 
-      message: 'Failed to get user results', 
-      error: error.message 
+    console.error('Error in getUserTestResults:', error); // Helpful for debugging
+    res.status(500).json({
+      message: 'Failed to get user results',
+      error: error.message
     });
   }
 };
+
 
 
 exports.getLeaderboard = async (req, res) => {

@@ -134,6 +134,92 @@ exports.getAllUsers = async (req, res) => {
 };
 
 
+exports.getOnlyUsers = async (req, res) => {
+  try {
+    const users = await User.aggregate([
+      { $match: { role: "user" } },
+      {
+        $lookup: {
+          from: "useranswers",
+          localField: "_id",
+          foreignField: "userId",
+          as: "testSubmissions"
+        }
+      },
+      {
+        $project: {
+          name: 1,
+          lumiId: 1,
+          usertype: 1,
+          testCount: { $size: "$testSubmissions" },
+          avgScore: {
+            $ifNull: [{ $avg: "$testSubmissions.scorePercentage" }, 0]
+          }
+        }
+      },
+      { $sort: { name: 1 } }
+    ]);
+
+    res.status(200).json({
+      message: "User-role users retrieved successfully",
+      count: users.length,
+      users
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Failed to fetch users",
+      error: error.message
+    });
+  }
+};
+
+exports.getAdminMentorSuperadminUsers = async (req, res) => {
+  try {
+    const users = await User.aggregate([
+      {
+        $match: {
+          role: { $in: ["admin", "mentor", "superadmin"] }
+        }
+      },
+      {
+        $lookup: {
+          from: "useranswers",
+          localField: "_id",
+          foreignField: "userId",
+          as: "testSubmissions"
+        }
+      },
+      {
+        $project: {
+          name: 1,
+          lumiId: 1,
+          usertype: 1,
+          role: 1, // ✅ Now the role will be included in the output
+          testCount: { $size: "$testSubmissions" },
+          avgScore: {
+            $ifNull: [{ $avg: "$testSubmissions.scorePercentage" }, 0]
+          }
+        }
+      },
+      { $sort: { name: 1 } }
+    ]);
+
+    res.status(200).json({
+      message: "Admin/Mentor/Superadmin users retrieved successfully",
+      count: users.length,
+      users
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Failed to fetch users",
+      error: error.message
+    });
+  }
+};
+
+
+
+
 exports.userLogin = async (req, res) => {
   try {
     const { lumiId, password } = req.body;
