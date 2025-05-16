@@ -29,6 +29,7 @@ const {
   updateSubTest,
   editQuestion,
   deleteQuestion,
+  getQuestion,
 } = require('./controllers/testContoller');
 
 const authMiddleware = require('../middleware/auth');
@@ -74,6 +75,9 @@ router.put('/update/:testId', authMiddleware, isAdmin, updateTest);
 router.post('/:testId/questions', authMiddleware, isAdmin, addQuestion);
 
 router.get('/:testId/questions', authMiddleware, getTestQuestions);
+
+router.get('/:testId/questions/:questionId', authMiddleware, getQuestion);
+
 
 router.put('/:testId/questions/:questionId', authMiddleware, isAdmin,editQuestion);
 

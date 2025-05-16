@@ -428,6 +428,28 @@ exports.getTestQuestions = async (req, res) => {
 };
 
 
+exports.getQuestion = async (req, res) => {
+  try {
+    const { testId, questionId } = req.params;
+    const question = await Question.findOne({ 
+      _id: questionId, 
+      testId 
+    });
+
+    if (!question) {
+      return res.status(404).json({ message: 'Question not found' });
+    }
+
+    res.status(200).json(question);
+  } catch (error) {
+    res.status(500).json({ 
+      message: 'Failed to fetch question', 
+      error: error.message 
+    });
+  }
+};
+
+
 // Admin: Edit a Question
 exports.editQuestion = async (req, res) => {
   try {
