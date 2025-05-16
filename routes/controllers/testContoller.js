@@ -427,6 +427,50 @@ exports.getTestQuestions = async (req, res) => {
   }
 };
 
+
+// Admin: Edit a Question
+exports.editQuestion = async (req, res) => {
+  try {
+    const questionId = req.params.questionId;
+    const { questionText, options } = req.body;
+
+    if (!Array.isArray(options) || options.length !== 4) {
+      return res.status(400).json({ message: 'Must provide exactly 4 options' });
+    }
+
+    const updatedQuestion = await Question.findByIdAndUpdate(
+      questionId,
+      { questionText, options },
+      { new: true }
+    );
+
+    if (!updatedQuestion) {
+      return res.status(404).json({ message: 'Question not found' });
+    }
+
+    res.status(200).json({ message: 'Question updated', question: updatedQuestion });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to update question', error: error.message });
+  }
+};
+
+// Admin: Delete a Question
+exports.deleteQuestion = async (req, res) => {
+  try {
+    const questionId = req.params.questionId;
+    const deletedQuestion = await Question.findByIdAndDelete(questionId);
+
+    if (!deletedQuestion) {
+      return res.status(404).json({ message: 'Question not found' });
+    }
+
+    res.status(200).json({ message: 'Question deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to delete question', error: error.message });
+  }
+};
+
+
 // Get single test by ID
 exports.getTestById = async (req, res) => {
   try {

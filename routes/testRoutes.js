@@ -27,6 +27,8 @@ const {
   deleteMainTest,
   deleteSubTest,
   updateSubTest,
+  editQuestion,
+  deleteQuestion,
 } = require('./controllers/testContoller');
 
 const authMiddleware = require('../middleware/auth');
@@ -71,6 +73,13 @@ router.put('/update/:testId', authMiddleware, isAdmin, updateTest);
 // Admin: Add question to a test
 router.post('/:testId/questions', authMiddleware, isAdmin, addQuestion);
 
+router.get('/:testId/questions', authMiddleware, getTestQuestions);
+
+router.put('/:testId/questions/:questionId', authMiddleware, isAdmin,editQuestion);
+
+// Delete a question
+router.delete('/:testId/questions/:questionId', authMiddleware, isAdmin, deleteQuestion);
+
 // User: Get list of tests with status
 router.get('/', authMiddleware, getUserTests);
 
@@ -80,7 +89,6 @@ router.get('/recent-submitted', authMiddleware, getRecentSubmittedTests);
 router.get("/:id", authMiddleware, getTestById);
 
 // User: Get questions for a test (30-minute timer included in response)
-router.get('/:testId/questions', authMiddleware, getTestQuestions);
 
 // User: Submit answers for a test
 router.post('/:testId/submit-answers', authMiddleware, submitAnswers);
