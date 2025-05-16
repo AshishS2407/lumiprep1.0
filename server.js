@@ -31,7 +31,7 @@ app.use('/auth', authRoutes);
 app.use('/tests', testRoutes);
 
 app.get('/', (req, res) => {
-  res.send('Assign Subtest');
+  res.send('Edit , Delete');
 });
 
 const PORT = process.env.PORT || 3000;
