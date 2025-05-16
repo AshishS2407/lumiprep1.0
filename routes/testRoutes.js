@@ -23,6 +23,10 @@ const {
   getLeaderboard,
   createSubTest,
   assignSubTestToMain,
+  editMainTest,
+  deleteMainTest,
+  deleteSubTest,
+  updateSubTest,
 } = require('./controllers/testContoller');
 
 const authMiddleware = require('../middleware/auth');
@@ -34,10 +38,22 @@ router.post('/sub', authMiddleware, isAdmin, createSubTest);
 // Admin: Create a main test (e.g., English, Hindi)
 router.post('/main', authMiddleware, isAdmin, createMainTest);
 
+router.put('/main/:id', authMiddleware, isAdmin, editMainTest);
+
+router.delete('/main/:id', authMiddleware, isAdmin, deleteMainTest);
+
+
 // Admin: Assign an existing sub test to a main test
 router.post('/assign-subtest', assignSubTestToMain);
 
 router.get('/sub-tests', authMiddleware, getSubTests);
+
+
+// Edit sub test
+router.put('/sub/:id', authMiddleware, isAdmin, updateSubTest);
+
+// Delete sub test
+router.delete('/sub/:id', authMiddleware, isAdmin, deleteSubTest);
 
 router.get('/main-tests', authMiddleware, getMainTests);
 
@@ -46,11 +62,11 @@ router.get('/user-stats', authMiddleware, getUserTestStats);
 router.get('/leaderboard', authMiddleware, getLeaderboard)
 
 
-router.get('/user/:userId/results', authMiddleware,isAdmin, getUserTestResults);
+router.get('/user/:userId/results', authMiddleware, isAdmin, getUserTestResults);
 
 router.get('/sub-tests/:mainTestId', authMiddleware, getSubTestsByMainId);
 
-router.put('/update/:testId', authMiddleware,isAdmin,updateTest);
+router.put('/update/:testId', authMiddleware, isAdmin, updateTest);
 
 // Admin: Add question to a test
 router.post('/:testId/questions', authMiddleware, isAdmin, addQuestion);

@@ -25,6 +25,49 @@ exports.createMainTest = async (req, res) => {
 };
 
 
+// 2. Edit Main Test
+exports.editMainTest = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { testTitle, description } = req.body;
+
+    const updatedTest = await Test.findByIdAndUpdate(
+      id,
+      { testTitle, description },
+      { new: true }
+    );
+
+    if (!updatedTest) {
+      return res.status(404).json({ message: 'Test not found' });
+    }
+
+    res.status(200).json({ message: 'Main test updated successfully', test: updatedTest });
+  } catch (error) {
+    console.error('Error updating main test:', error);
+    res.status(500).json({ message: 'Error updating main test' });
+  }
+};
+
+
+// 3. Delete Main Test
+exports.deleteMainTest = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const deletedTest = await Test.findByIdAndDelete(id);
+
+    if (!deletedTest) {
+      return res.status(404).json({ message: 'Test not found' });
+    }
+
+    res.status(200).json({ message: 'Main test deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting main test:', error);
+    res.status(500).json({ message: 'Error deleting main test' });
+  }
+};
+
+
 
 
 //2 Admin: Create Sub Test
@@ -63,6 +106,52 @@ exports.createSubTest = async (req, res) => {
   }
 };
 
+
+// Edit Sub Test
+exports.updateSubTest = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { companyName, testTitle, description, validTill, duration, parentTestIds } = req.body;
+
+    if (!duration) {
+      return res.status(400).json({ message: 'Duration is required' });
+    }
+
+    if (!parentTestIds || parentTestIds.length === 0) {
+      return res.status(400).json({ message: 'At least one parentTestId is required for sub tests' });
+    }
+
+    // Verify parent tests exist and are main tests
+    const parentTests = await Test.find({ _id: { $in: parentTestIds }, testType: 'main' });
+    if (parentTests.length !== parentTestIds.length) {
+      return res.status(400).json({ message: 'One or more parent tests not found or not main tests' });
+    }
+
+    const updatedTest = await Test.findByIdAndUpdate(
+      id,
+      {
+        companyName,
+        testTitle,
+        description,
+        validTill,
+        duration,
+        parentTestIds,
+      },
+      { new: true }
+    );
+
+    if (!updatedTest) {
+      return res.status(404).json({ message: 'Sub test not found' });
+    }
+
+    res.status(200).json(updatedTest);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Error updating sub test' });
+  }
+};
+
+
 //3 Assign existing sub test to a main test
 exports.assignSubTestToMain = async (req, res) => {
   try {
@@ -97,6 +186,23 @@ exports.assignSubTestToMain = async (req, res) => {
 };
 
 
+// Delete Sub Test
+exports.deleteSubTest = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const deletedTest = await Test.findByIdAndDelete(id);
+
+    if (!deletedTest) {
+      return res.status(404).json({ message: 'Sub test not found' });
+    }
+
+    res.status(200).json({ message: 'Sub test deleted successfully' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Error deleting sub test' });
+  }
+};
 
 
 //3 Get All Main Tests with their Sub Tests
