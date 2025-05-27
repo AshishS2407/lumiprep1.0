@@ -235,8 +235,9 @@ exports.userLogin = async (req, res) => {
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(401).json({ message: 'Invalid credentials' });
 
+    // Include `name` in the JWT payload
     const token = jwt.sign(
-      { id: user._id, role: user.role },
+      { id: user._id, name: user.name, role: user.role },
       process.env.JWT_SECRET,
       { expiresIn: '1d' }
     );
@@ -255,6 +256,7 @@ exports.userLogin = async (req, res) => {
     res.status(500).json({ message: 'Login failed', error: error.message });
   }
 };
+
 
 
 
