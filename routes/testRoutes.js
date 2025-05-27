@@ -35,82 +35,46 @@ const {
 const authMiddleware = require('../middleware/auth');
 const isAdmin = require('../middleware/isAdmin');
 
-// Admin: Create a new test
-router.post('/sub', authMiddleware, isAdmin, createSubTest);
-
-// Admin: Create a main test (e.g., English, Hindi)
+// Main tests routes
+router.get('/main/all', authMiddleware, getMainTestsWithSubTests);
+router.get('/main-tests', authMiddleware, getMainTests);
 router.post('/main', authMiddleware, isAdmin, createMainTest);
-
 router.put('/main/:id', authMiddleware, isAdmin, editMainTest);
-
 router.delete('/main/:id', authMiddleware, isAdmin, deleteMainTest);
 
-
-// Admin: Assign an existing sub test to a main test
+// Sub tests routes
+router.get('/sub-tests', authMiddleware, getSubTests);
+router.get('/sub-tests/:mainTestId', authMiddleware, getSubTestsByMainId);
+router.post('/sub', authMiddleware, isAdmin, createSubTest);
+router.put('/sub/:id', authMiddleware, isAdmin, updateSubTest);
+router.delete('/sub/:id', authMiddleware, isAdmin, deleteSubTest);
 router.post('/assign-subtest', assignSubTestToMain);
 
-router.get('/sub-tests', authMiddleware, getSubTests);
-
-
-// Edit sub test
-router.put('/sub/:id', authMiddleware, isAdmin, updateSubTest);
-
-// Delete sub test
-router.delete('/sub/:id', authMiddleware, isAdmin, deleteSubTest);
-
-router.get('/main-tests', authMiddleware, getMainTests);
-
-router.get('/user-stats', authMiddleware, getUserTestStats);
-
-router.get('/leaderboard', authMiddleware, getLeaderboard)
-
-
-router.get('/user/:userId/results', authMiddleware, isAdmin, getUserTestResults);
-
-router.get('/sub-tests/:mainTestId', authMiddleware, getSubTestsByMainId);
-
+// Test management routes
+router.get('/', authMiddleware, getUserTests);
+router.get('/:id', authMiddleware, getTestById);
 router.put('/update/:testId', authMiddleware, isAdmin, updateTest);
 
-// Admin: Add question to a test
-router.post('/:testId/questions', authMiddleware, isAdmin, addQuestion);
-
+// Question routes
 router.get('/:testId/questions', authMiddleware, getTestQuestions);
-
 router.get('/:testId/questions/:questionId', authMiddleware, getQuestion);
-
-
-router.put('/:testId/questions/:questionId', authMiddleware, isAdmin,editQuestion);
-
-// Delete a question
+router.post('/:testId/questions', authMiddleware, isAdmin, addQuestion);
+router.put('/:testId/questions/:questionId', authMiddleware, isAdmin, editQuestion);
 router.delete('/:testId/questions/:questionId', authMiddleware, isAdmin, deleteQuestion);
 
-// User: Get list of tests with status
-router.get('/', authMiddleware, getUserTests);
-
-router.get('/recent-submitted', authMiddleware, getRecentSubmittedTests);
-
-// Get single test by ID
-router.get("/:id", authMiddleware, getTestById);
-
-// User: Get questions for a test (30-minute timer included in response)
-
-// User: Submit answers for a test
-router.post('/:testId/submit-answers', authMiddleware, submitAnswers);
-
-router.get('/:testId/evaluate', authMiddleware, evaluateTest);
-
-// Admin adds or updates explanation
+// Explanation routes
 router.put('/:testId/questions/:questionId/explanation', authMiddleware, isAdmin, addExplanation);
-
-// User views explanations (only after submitting test)
 router.get('/:testId/explanations', authMiddleware, getExplanations);
-
 router.get('/:testId/explanations/filter', authMiddleware, getFilteredExplanations);
 
-router.get('/main/all', authMiddleware, getMainTestsWithSubTests);
+// Test taking and evaluation routes
+router.post('/:testId/submit-answers', authMiddleware, submitAnswers);
+router.get('/:testId/evaluate', authMiddleware, evaluateTest);
 
-
-
-
+// User stats and results routes
+router.get('/user-stats', authMiddleware, getUserTestStats);
+router.get('/user/:userId/results', authMiddleware, isAdmin, getUserTestResults);
+router.get('/recent-submitted', authMiddleware, getRecentSubmittedTests);
+router.get('/leaderboard', authMiddleware, getLeaderboard);
 
 module.exports = router;

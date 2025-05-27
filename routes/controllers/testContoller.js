@@ -402,13 +402,26 @@ exports.getUserTests = async (req, res) => {
 // Admin: Add Question to Test`
 exports.addQuestion = async (req, res) => {
   try {
-    const testId = req.params.testId; // 🔹 Get from URL
+    const testId = req.params.testId;
     const { questionText, options } = req.body;
+    
     if (!Array.isArray(options) || options.length !== 4) {
       return res.status(400).json({ message: 'Must provide exactly 4 options' });
     }
 
-    const question = await Question.create({ testId, questionText, options });
+    // Get admin info from the authenticated request
+    const addedBy = {
+      userId: req.user.id,  // From auth middleware
+      name: req.user.name   // From the user's JWT payload
+    };
+
+    const question = await Question.create({ 
+      testId, 
+      questionText, 
+      options,
+      addedBy  // Include the admin info
+    });
+
     res.status(201).json({ message: 'Question added', question });
   } catch (error) {
     res.status(500).json({ message: 'Failed to add question', error: error.message });
@@ -420,10 +433,32 @@ exports.getTestQuestions = async (req, res) => {
   const { testId } = req.params;
 
   try {
-    const questions = await Question.find({ testId }).select('-options.isCorrect');
-    res.status(200).json({ questions, timer: 30 * 60 }); // 30 mins
+    const questions = await Question.find({ testId })
+      .select('-options.isCorrect') // Hide correct answers
+      .populate({
+        path: 'addedBy.userId',
+        select: 'name', // Only get the name from the User collection
+        model: 'User'
+      });
+
+    // Transform the data to include admin name in a cleaner format
+    const formattedQuestions = questions.map(question => ({
+      ...question.toObject(),
+      addedBy: {
+        name: question.addedBy.userId?.name || question.addedBy.name
+        // Fallback to directly stored name if population fails
+      }
+    }));
+
+    res.status(200).json({ 
+      questions: formattedQuestions,
+      timer: 30 * 60 // 30 mins
+    });
   } catch (error) {
-    res.status(500).json({ message: 'Error fetching questions', error: error.message });
+    res.status(500).json({ 
+      message: 'Error fetching questions', 
+      error: error.message 
+    });
   }
 };
 
@@ -460,9 +495,20 @@ exports.editQuestion = async (req, res) => {
       return res.status(400).json({ message: 'Must provide exactly 4 options' });
     }
 
+    // Get admin info from the authenticated request
+    const updatedBy = {
+      userId: req.user.id,
+      name: req.user.name
+    };
+
     const updatedQuestion = await Question.findByIdAndUpdate(
       questionId,
-      { questionText, options },
+      { 
+        questionText, 
+        options,
+        updatedBy,  // Track who made the edit
+        updatedAt: Date.now()  // Track when the edit was made
+      },
       { new: true }
     );
 
@@ -470,9 +516,15 @@ exports.editQuestion = async (req, res) => {
       return res.status(404).json({ message: 'Question not found' });
     }
 
-    res.status(200).json({ message: 'Question updated', question: updatedQuestion });
+    res.status(200).json({ 
+      message: 'Question updated', 
+      question: updatedQuestion 
+    });
   } catch (error) {
-    res.status(500).json({ message: 'Failed to update question', error: error.message });
+    res.status(500).json({ 
+      message: 'Failed to update question', 
+      error: error.message 
+    });
   }
 };
 

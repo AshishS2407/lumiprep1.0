@@ -2,7 +2,6 @@
 const jwt = require('jsonwebtoken');
 
 module.exports = (req, res, next) => {
-    
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -13,7 +12,18 @@ module.exports = (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = decoded; // Must include `.id` in payload when signing token
+    
+    // Verify the decoded token has required fields
+    if (!decoded.id || !decoded.name) {
+      return res.status(401).json({ message: "Malformed token payload" });
+    }
+
+    req.user = {
+      id: decoded.id,       // User's MongoDB _id
+      name: decoded.name,   // User's name
+      role: decoded.role    // User's role (admin/user/etc)
+    };
+    
     next();
   } catch (err) {
     res.status(401).json({ message: "Invalid token" });
