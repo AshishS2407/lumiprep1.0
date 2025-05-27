@@ -796,19 +796,23 @@ exports.getUserTestStats = async (req, res) => {
 
 
 
-// Add to your test controllers
 exports.getUserTestResults = async (req, res) => {
   try {
     const userId = req.params.userId;
 
-    // Get all test submissions with test details
     const submissions = await UserAnswer.find({ userId })
-      .populate('testId', 'testTitle description duration')
+      .populate({
+        path: 'testId',
+        select: 'testTitle description duration testType parentTestIds',
+        populate: {
+          path: 'parentTestIds',
+          select: 'testTitle'
+        }
+      })
       .sort({ submittedAt: -1 });
 
     const results = await Promise.all(
       submissions.map(async (submission) => {
-        // If the test has been deleted or is not populated
         if (!submission.testId) return null;
 
         const questions = await Question.find({ testId: submission.testId._id });
@@ -841,6 +845,11 @@ exports.getUserTestResults = async (req, res) => {
           testTitle: submission.testId.testTitle,
           testDescription: submission.testId.description,
           duration: submission.testId.duration,
+          testType: submission.testId.testType,
+          parentTests: submission.testId.parentTestIds?.map(parent => ({
+            testId: parent._id,
+            testTitle: parent.testTitle
+          })) ?? [],
           submittedAt: submission.submittedAt,
           totalQuestions: questions.length,
           correctAnswers: correctCount,
@@ -855,13 +864,14 @@ exports.getUserTestResults = async (req, res) => {
     const filteredResults = results.filter(r => r !== null);
     res.status(200).json(filteredResults);
   } catch (error) {
-    console.error('Error in getUserTestResults:', error); // Helpful for debugging
+    console.error('Error in getUserTestResults:', error);
     res.status(500).json({
       message: 'Failed to get user results',
       error: error.message
     });
   }
 };
+
 
 
 
