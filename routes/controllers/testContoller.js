@@ -2,7 +2,8 @@ const Test = require('../../models/test/testModel');
 const UserTestStatus = require('../../models/test/userTestStatusModel');
 const Question = require('../../models/test/questionModel');
 const UserAnswer = require('../../models/test/answerModel');
-
+const User = require('../../models/userModel');
+const MockTest = require('../../models/test/mockTest');
 
 
 //1 Create Main Test
@@ -10,8 +11,8 @@ exports.createMainTest = async (req, res) => {
   try {
     const { testTitle, description } = req.body;
 
-    const newTest = await Test.create({ 
-      testTitle, 
+    const newTest = await Test.create({
+      testTitle,
       description,
       testType: 'main',
       parentTestIds: []
@@ -89,11 +90,11 @@ exports.createSubTest = async (req, res) => {
       return res.status(400).json({ message: 'One or more parent tests not found or not main tests' });
     }
 
-    const newTest = await Test.create({ 
-      companyName, 
-      testTitle, 
-      description, 
-      validTill, 
+    const newTest = await Test.create({
+      companyName,
+      testTitle,
+      description,
+      validTill,
       duration,
       testType: 'sub',
       parentTestIds
@@ -211,10 +212,10 @@ exports.getMainTestsWithSubTests = async (req, res) => {
     const mainTests = await Test.find({ testType: 'main' });
     const result = await Promise.all(
       mainTests.map(async (mainTest) => {
-        const subTests = await Test.find({ 
+        const subTests = await Test.find({
           parentTestIds: mainTest._id,  // Now checking if _id exists in the array
           testType: 'sub'               // Explicitly checking testType for safety
-        });                return {
+        }); return {
           ...mainTest.toObject(),
           subTests,
         };
@@ -404,7 +405,7 @@ exports.addQuestion = async (req, res) => {
   try {
     const testId = req.params.testId;
     const { questionText, options } = req.body;
-    
+
     if (!Array.isArray(options) || options.length !== 4) {
       return res.status(400).json({ message: 'Must provide exactly 4 options' });
     }
@@ -415,9 +416,9 @@ exports.addQuestion = async (req, res) => {
       name: req.user.name   // From the user's JWT payload
     };
 
-    const question = await Question.create({ 
-      testId, 
-      questionText, 
+    const question = await Question.create({
+      testId,
+      questionText,
       options,
       addedBy  // Include the admin info
     });
@@ -450,14 +451,14 @@ exports.getTestQuestions = async (req, res) => {
       }
     }));
 
-    res.status(200).json({ 
+    res.status(200).json({
       questions: formattedQuestions,
       timer: 30 * 60 // 30 mins
     });
   } catch (error) {
-    res.status(500).json({ 
-      message: 'Error fetching questions', 
-      error: error.message 
+    res.status(500).json({
+      message: 'Error fetching questions',
+      error: error.message
     });
   }
 };
@@ -466,9 +467,9 @@ exports.getTestQuestions = async (req, res) => {
 exports.getQuestion = async (req, res) => {
   try {
     const { testId, questionId } = req.params;
-    const question = await Question.findOne({ 
-      _id: questionId, 
-      testId 
+    const question = await Question.findOne({
+      _id: questionId,
+      testId
     });
 
     if (!question) {
@@ -477,9 +478,9 @@ exports.getQuestion = async (req, res) => {
 
     res.status(200).json(question);
   } catch (error) {
-    res.status(500).json({ 
-      message: 'Failed to fetch question', 
-      error: error.message 
+    res.status(500).json({
+      message: 'Failed to fetch question',
+      error: error.message
     });
   }
 };
@@ -503,8 +504,8 @@ exports.editQuestion = async (req, res) => {
 
     const updatedQuestion = await Question.findByIdAndUpdate(
       questionId,
-      { 
-        questionText, 
+      {
+        questionText,
         options,
         updatedBy,  // Track who made the edit
         updatedAt: Date.now()  // Track when the edit was made
@@ -516,14 +517,14 @@ exports.editQuestion = async (req, res) => {
       return res.status(404).json({ message: 'Question not found' });
     }
 
-    res.status(200).json({ 
-      message: 'Question updated', 
-      question: updatedQuestion 
+    res.status(200).json({
+      message: 'Question updated',
+      question: updatedQuestion
     });
   } catch (error) {
-    res.status(500).json({ 
-      message: 'Failed to update question', 
-      error: error.message 
+    res.status(500).json({
+      message: 'Failed to update question',
+      error: error.message
     });
   }
 };
@@ -693,7 +694,7 @@ exports.getRecentSubmittedTests = async (req, res) => {
 
 exports.getFilteredExplanations = async (req, res) => {
   const { testId } = req.params;
-  const { filter } = req.query; 
+  const { filter } = req.query;
   const userId = req.user.id;
 
   if (!['correct', 'incorrect'].includes(filter)) {
@@ -748,13 +749,23 @@ exports.getUserTestStats = async (req, res) => {
   const userId = req.user.id;
 
   try {
+    // 1️⃣ Get mock test IDs
+    const mockTests = await MockTest.find({}, '_id');
+    const mockTestIds = new Set(mockTests.map(test => test._id.toString()));
+
+    // 2️⃣ Get user's submissions that are NOT mock tests
     const submissions = await UserAnswer.find({ userId });
     let passed = 0;
     let totalScore = 0;
+    let totalTests = 0;
 
     for (const submission of submissions) {
+      // 🔴 Skip if it's a mock test
+      if (mockTestIds.has(submission.testId.toString())) continue;
+
       const questions = await Question.find({ testId: submission.testId });
       const totalQuestions = questions.length;
+      if (!totalQuestions) continue;
 
       let correctAnswers = 0;
       for (const question of questions) {
@@ -769,10 +780,10 @@ exports.getUserTestStats = async (req, res) => {
 
       const percentage = (correctAnswers / totalQuestions) * 100;
       totalScore += percentage;
+      totalTests++; // ✅ Count only real tests
       if (percentage >= 50) passed++;
     }
 
-    const totalTests = submissions.length;
     const failed = totalTests - passed;
     const avgScore = totalTests ? Math.round(totalScore / totalTests) : 0;
 
@@ -783,17 +794,9 @@ exports.getUserTestStats = async (req, res) => {
       average: avgScore,
     });
   } catch (error) {
-    res.status(500).json({ message: "Failed to get stats", error: error.message });
+    res.status(500).json({ message: 'Failed to get stats', error: error.message });
   }
 };
-
-
-
-
-
-
-
-
 
 
 exports.getUserTestResults = async (req, res) => {
@@ -833,7 +836,12 @@ exports.getUserTestResults = async (req, res) => {
             questionId: question._id,
             questionText: question.questionText,
             selectedOptionIndex: submittedAnswer?.selectedOptionIndex ?? null,
+            selectedOptionText: submittedAnswer?.selectedOptionIndex != null
+              ? question.options[submittedAnswer.selectedOptionIndex]?.text || null
+              : null,
+
             correctOptionIndex: correctIndex,
+            correctOptionText: question.options[correctIndex]?.text || null,
             isCorrect,
             explanation: question.explanation
           });
@@ -873,11 +881,25 @@ exports.getUserTestResults = async (req, res) => {
 };
 
 
-
-
 exports.getLeaderboard = async (req, res) => {
   try {
     const leaderboard = await UserAnswer.aggregate([
+      // ✅ Step 1: Lookup if the testId exists in the mocktests collection
+      {
+        $lookup: {
+          from: 'mocktests',
+          localField: 'testId',
+          foreignField: '_id',
+          as: 'mockTestMatch',
+        },
+      },
+      // ✅ Step 2: Filter out user answers that are from mock tests
+      {
+        $match: {
+          mockTestMatch: { $size: 0 }, // Only include real tests
+        },
+      },
+      // ✅ Step 3: Lookup questions for answer checking
       {
         $lookup: {
           from: 'questions',
@@ -886,6 +908,7 @@ exports.getLeaderboard = async (req, res) => {
           as: 'questionDetails',
         },
       },
+      // ✅ Step 4: Calculate total correct answers per test
       {
         $addFields: {
           totalCorrect: {
@@ -925,6 +948,7 @@ exports.getLeaderboard = async (req, res) => {
           totalQuestions: { $size: '$answers' },
         },
       },
+      // ✅ Step 5: Group by userId and sum up scores across tests
       {
         $group: {
           _id: '$userId',
@@ -932,6 +956,7 @@ exports.getLeaderboard = async (req, res) => {
           totalQuestionsAcrossTests: { $sum: '$totalQuestions' },
         },
       },
+      // ✅ Step 6: Calculate accuracy percentage
       {
         $addFields: {
           accuracy: {
@@ -950,6 +975,7 @@ exports.getLeaderboard = async (req, res) => {
           },
         },
       },
+      // ✅ Step 7: Lookup user info
       {
         $lookup: {
           from: 'users',
@@ -959,6 +985,7 @@ exports.getLeaderboard = async (req, res) => {
         },
       },
       { $unwind: '$user' },
+      // ✅ Step 8: Project final leaderboard fields
       {
         $project: {
           _id: 0,
@@ -968,6 +995,7 @@ exports.getLeaderboard = async (req, res) => {
           accuracy: { $round: ['$accuracy', 2] },
         },
       },
+      // ✅ Step 9: Sort and limit to top 10
       { $sort: { accuracy: -1 } },
       { $limit: 10 },
     ]);
@@ -978,3 +1006,4 @@ exports.getLeaderboard = async (req, res) => {
     res.status(500).json({ message: 'Failed to generate leaderboard', error: error.message });
   }
 };
+

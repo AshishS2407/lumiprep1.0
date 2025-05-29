@@ -3,6 +3,7 @@ const dotenv = require('dotenv');
 const cors = require('cors');
 const authRoutes = require('./routes/authRoutes');
 const testRoutes = require('./routes/testRoutes');
+const mocktestRoutes = require('./routes/mocktestRoutes')
 const connectDB = require('./config/db');
 
 dotenv.config();
@@ -29,9 +30,11 @@ app.use(express.json());
 // Routes
 app.use('/auth', authRoutes);
 app.use('/tests', testRoutes);
+app.use('/mock', mocktestRoutes);
+
 
 app.get('/', (req, res) => {
-  res.send('User Login Updated');
+  res.send('Mock Test Updated');
 });
 
 const PORT = process.env.PORT || 3000;

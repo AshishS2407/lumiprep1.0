@@ -41,6 +41,9 @@ router.post('/sub', authMiddleware, isAdmin, createSubTest);
 // Admin: Create a main test (e.g., English, Hindi)
 router.post('/main', authMiddleware, isAdmin, createMainTest);
 
+router.get('/user-stats', authMiddleware, getUserTestStats);
+
+
 router.put('/main/:id', authMiddleware, isAdmin, editMainTest);
 
 router.delete('/main/:id', authMiddleware, isAdmin, deleteMainTest);
@@ -60,7 +63,6 @@ router.delete('/sub/:id', authMiddleware, isAdmin, deleteSubTest);
 
 router.get('/main-tests', authMiddleware, getMainTests);
 
-router.get('/user-stats', authMiddleware, getUserTestStats);
 
 router.get('/leaderboard', authMiddleware, getLeaderboard)
 

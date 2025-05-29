@@ -262,7 +262,7 @@ exports.userLogin = async (req, res) => {
 
 exports.createAdmin = async (req, res) => {
   try {
-    const { email, password, role } = req.body;
+    const { name, email, password, role } = req.body;
 
     // Get the user's role from the JWT token
     const userRole = req.user.role;  // Assuming user info is stored in req.user after authentication
@@ -273,8 +273,9 @@ exports.createAdmin = async (req, res) => {
     }
 
     // Validate required fields
-    if (!email || !password || !role)
-      return res.status(400).json({ message: 'Email, password, and role are required' });
+    if (!name || !email || !password || !role) {
+      return res.status(400).json({ message: 'Name, email, password, and role are required' });
+    }
 
     // Ensure the role is one of the allowed roles
     const allowedRoles = ['admin', 'superadmin', 'mentor'];
@@ -284,21 +285,24 @@ exports.createAdmin = async (req, res) => {
 
     // Check if the email already exists
     const existing = await User.findOne({ email });
-    if (existing) return res.status(400).json({ message: 'Email already exists' });
+    if (existing) {
+      return res.status(400).json({ message: 'Email already exists' });
+    }
 
     // Hash the password
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Create the new user with the specified role
     const newUser = await User.create({
-      name: email.split('@')[0], // Automatically generate the name from the email
+      name,
       email,
       password: hashedPassword,
-      role, // Set the role dynamically
+      role,
     });
 
     res.status(201).json({
       message: `${role.charAt(0).toUpperCase() + role.slice(1)} created successfully`,
+      name: newUser.name,
       email: newUser.email,
       role: newUser.role,
     });
@@ -306,4 +310,5 @@ exports.createAdmin = async (req, res) => {
     res.status(500).json({ message: 'Failed to create user', error: err.message });
   }
 };
+
 
