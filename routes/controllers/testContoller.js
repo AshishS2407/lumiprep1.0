@@ -584,6 +584,24 @@ exports.submitAnswers = async (req, res) => {
 };
 
 
+// GET /tests/:testId/check-submission
+exports.checkTestSubmission = async (req, res) => {
+  const userId = req.user.id;
+  const { testId } = req.params;
+
+  try {
+    const submission = await UserAnswer.findOne({ userId, testId });
+    if (submission) {
+      return res.status(200).json({ submitted: true });
+    }
+    return res.status(200).json({ submitted: false });
+  } catch (error) {
+    return res.status(500).json({ message: "Error checking submission status", error: error.message });
+  }
+};
+
+
+
 exports.evaluateTest = async (req, res) => {
   const { testId } = req.params;
   const userId = req.user.id;

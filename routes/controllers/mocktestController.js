@@ -135,18 +135,6 @@ exports.addQuestionToMockTest = async (req, res) => {
 
 
 
-
-exports.getQuestionsByMockTest = async (req, res) => {
-  try {
-    const { mockTestId } = req.params;
-    const questions = await MockQuestion.find({ mockTestId });
-    res.json({ questions });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Failed to fetch questions', error: error.message });
-  }
-};
-
 // Update a question by questionId
 exports.updateMockQuestion = async (req, res) => {
   try {
@@ -215,6 +203,22 @@ exports.getMockQuestionById = async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Failed to fetch question", error: error.message });
+  }
+};
+
+exports.getMockTestDeatilsById = async (req, res) => {
+  try {
+    const { mockTestId } = req.params;
+
+    const test = await MockTest.findById(mockTestId).select("name description");
+    if (!test) {
+      return res.status(404).json({ message: "Mock test not found" });
+    }
+
+    res.json({ test });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Failed to fetch mock test", error: error.message });
   }
 };
 
@@ -341,6 +345,26 @@ exports.evaluateMockTest = async (req, res) => {
   } catch (error) {
     console.error("Error evaluating mock test:", error);
     res.status(500).json({ message: 'Failed to evaluate mock test', error: error.message });
+  }
+};
+
+
+
+exports.checkMockTestSubmissionStatus = async (req, res) => {
+  const { mockTestId } = req.params;
+  const userId = req.user.id;
+
+  try {
+    const submission = await UserAnswer.findOne({ userId, testId: mockTestId });
+
+    if (submission) {
+      return res.status(200).json({ submitted: true });
+    } else {
+      return res.status(200).json({ submitted: false });
+    }
+  } catch (error) {
+    console.error("Error checking submission status:", error);
+    res.status(500).json({ message: 'Failed to check submission status', error: error.message });
   }
 };
 

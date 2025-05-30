@@ -34,7 +34,7 @@ app.use('/mock', mocktestRoutes);
 
 
 app.get('/', (req, res) => {
-  res.send('Mock Test Updated');
+  res.send('Mock Test Timer Pending');
 });
 
 const PORT = process.env.PORT || 3000;

@@ -30,6 +30,7 @@ const {
   editQuestion,
   deleteQuestion,
   getQuestion,
+  checkTestSubmission,
 } = require('./controllers/testContoller');
 
 const authMiddleware = require('../middleware/auth');
@@ -97,6 +98,8 @@ router.get("/:id", authMiddleware, getTestById);
 
 // User: Submit answers for a test
 router.post('/:testId/submit-answers', authMiddleware, submitAnswers);
+
+router.get('/:testId/check-submission', authMiddleware, checkTestSubmission);
 
 router.get('/:testId/evaluate', authMiddleware, evaluateTest);
 
